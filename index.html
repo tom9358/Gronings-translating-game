@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grunnegs Oefenen</title>
+<style>
+  :root {
+    --red: #e03c31; --blue: #0055a3; --green: #009a44; --white: #f0f0f0;
+    --bg: #1a1a2e; --card: #222244; --text: #e8e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+
+  /* ── Flag ────────────────────────────────────────── */
+  .flag {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+    width: min(360px, 90vw); aspect-ratio: 3/2;
+    border-radius: 6px; overflow: hidden;
+    margin-bottom: 1.5rem; box-shadow: 0 4px 24px #0004;
+  }
+  .flag .cell {
+    opacity: 0; transform: scale(0);
+    transition: opacity .3s, transform .3s;
+  }
+  .flag .cell.show { opacity: 1; transform: scale(1); }
+  .c-r { background: var(--red); }
+  .c-b { background: var(--blue); }
+  .c-g { background: var(--green); }
+  .c-w { background: var(--white); }
+
+  /* ── Screens ─────────────────────────────────────── */
+  .screen { display: none; flex-direction: column; align-items: center; width: min(600px, 95vw); }
+  .screen.active { display: flex; }
+  h1 { font-size: 1.6rem; margin-bottom: .3rem; }
+  .subtitle { color: #999; font-size: .9rem; margin-bottom: 1.5rem; }
+  button {
+    background: var(--green); color: #fff; border: none;
+    padding: .7rem 2rem; border-radius: 8px; font-size: 1rem;
+    cursor: pointer; transition: opacity .2s; margin: .3rem;
+  }
+  button:hover { opacity: .85; }
+  button.secondary { background: #555; }
+  .loading { color: #999; margin: 1rem 0; }
+
+  /* ── Shared quiz ─────────────────────────────────── */
+  .quiz-card {
+    background: var(--card); border-radius: 12px; padding: 1.5rem;
+    width: 100%; margin-bottom: 1rem; box-shadow: 0 2px 12px #0003;
+  }
+  .quiz-label { font-size: .8rem; color: #888; text-transform: uppercase; margin-bottom: .3rem; }
+  .quiz-sentence { font-size: 1.2rem; margin-bottom: 1rem; }
+  .quiz-input {
+    width: 100%; padding: .7rem; font-size: 1.1rem; border: 2px solid #444;
+    border-radius: 8px; background: #1a1a2e; color: var(--text);
+    outline: none; transition: border-color .2s;
+  }
+  .quiz-input:focus { border-color: var(--green); }
+  .quiz-input:disabled { opacity: .5; }
+  .feedback { margin-top: .8rem; font-size: 1rem; min-height: 1.5em; }
+  .feedback.correct { color: #4caf50; }
+  .feedback.wrong { color: #f44336; }
+  .answer-reveal { color: #4caf50; font-size: .95rem; margin-top: .3rem; }
+  .stats {
+    display: flex; gap: 1.5rem; justify-content: center;
+    font-size: .9rem; color: #aaa; margin-bottom: .8rem;
+  }
+  .stats .val { color: var(--text); font-weight: bold; }
+  .streak { color: #ff9800; }
+  .btn-row { display: flex; gap: .5rem; margin-top: .5rem; flex-wrap: wrap; justify-content: center; }
+  .hint-text { color: #888; font-size: .95rem; margin-top: .4rem; }
+
+  /* ── Pick mode ───────────────────────────────────── */
+  .pick-built {
+    font-size: 1.15rem; min-height: 1.8em; margin-bottom: 1rem;
+    padding: .5rem; background: #1a1a2e; border-radius: 8px;
+    display: flex; flex-wrap: wrap; gap: .3rem; align-items: center;
+  }
+  .pick-built .pw { padding: .2rem .5rem; border-radius: 4px; }
+  .pick-built .pw.filled { background: #335; }
+  .pick-built .pw.blank { color: #555; border-bottom: 2px dashed #555; }
+  .pick-built .pw.wrong-word { background: #633; color: #f88; }
+  .pick-built .pw.correct-word { background: #353; color: #8f8; }
+
+  .pick-grid {
+    display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center;
+    margin-bottom: .5rem;
+  }
+  .pick-col {
+    display: flex; flex-direction: column; gap: .3rem;
+    align-items: stretch; min-width: 0;
+  }
+  .pick-col .col-label {
+    font-size: .65rem; color: #555; text-align: center;
+    margin-bottom: .1rem;
+  }
+  .word-btn {
+    background: #334; color: var(--text); border: 2px solid #445;
+    padding: .4rem .7rem; border-radius: 6px; font-size: .95rem;
+    cursor: pointer; transition: all .15s; text-align: center;
+    white-space: nowrap;
+  }
+  .word-btn:hover { border-color: #88a; background: #445; }
+  .word-btn.selected { background: var(--green); border-color: var(--green); color: #fff; }
+  .word-btn.locked { opacity: .5; pointer-events: none; }
+  .word-btn.wrong-pick {
+    background: #633; border-color: #a44; color: #fcc;
+    animation: shake .3s;
+  }
+  .word-btn.correct-reveal { background: #353; border-color: #4a4; color: #cfc; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── Menu Screen ───────────────────────────────────── -->
+<div id="menu" class="screen active">
+  <div class="flag" id="flag"></div>
+  <h1>Grunnegs Oefenen</h1>
+  <p class="subtitle">Leer Grunnegs mit Tatoeba</p>
+  <button onclick="startGame('type')">✏️ Typen</button>
+  <button onclick="startGame('pick')">👆 Kiezen</button>
+</div>
+
+<!-- ─── Loading Screen ────────────────────────────────── -->
+<div id="loading" class="screen">
+  <div class="flag" id="flag2"></div>
+  <p class="loading" id="loadMsg">Zinnen ophalen van Tatoeba…</p>
+</div>
+
+<!-- ─── Type Quiz Screen ──────────────────────────────── -->
+<div id="quiz" class="screen">
+  <div class="stats" id="typeStats">
+    <span>Score: <span class="val" id="score">0/0</span></span>
+    <span>Nauwkeurigheid: <span class="val" id="accuracy">–</span></span>
+    <span class="streak" id="streakDisplay"></span>
+  </div>
+  <div class="quiz-card">
+    <div class="quiz-label">Nederlands</div>
+    <div class="quiz-sentence" id="nlSentence"></div>
+    <div class="quiz-label">Grunnegs</div>
+    <input class="quiz-input" id="answerInput" autocomplete="off"
+           placeholder="Typ de Grunnegs vertaling…"
+           onkeydown="if(event.key==='Enter')checkAnswer()">
+    <div class="feedback" id="feedback"></div>
+    <div class="answer-reveal" id="reveal"></div>
+    <div class="hint-text" id="hintText"></div>
+  </div>
+  <div class="btn-row">
+    <button id="submitBtn">Controleer</button>
+    <button class="secondary" id="hintBtn" onclick="showHint()">Hint</button>
+    <button class="secondary" id="skipBtn" onclick="skipQuestion()">Overslaan</button>
+    <button class="secondary" onclick="quitGame()">Stoppen</button>
+  </div>
+</div>
+
+<!-- ─── Pick Quiz Screen ──────────────────────────────── -->
+<div id="pick" class="screen">
+  <div class="stats" id="pickStats">
+    <span>Score: <span class="val" id="pScore">0/0</span></span>
+    <span>Nauwkeurigheid: <span class="val" id="pAccuracy">–</span></span>
+    <span class="streak" id="pStreakDisplay"></span>
+  </div>
+  <div class="quiz-card">
+    <div class="quiz-label">Nederlands</div>
+    <div class="quiz-sentence" id="pNlSentence"></div>
+    <div class="quiz-label">Jouw Grunnegs zin</div>
+    <div class="pick-built" id="pickBuilt"></div>
+    <div class="pick-grid" id="pickGrid"></div>
+    <div class="feedback" id="pFeedback"></div>
+    <div class="answer-reveal" id="pReveal"></div>
+  </div>
+  <div class="btn-row">
+    <button onclick="pickNext()" id="pickNextBtn" style="display:none">Volgende</button>
+    <button class="secondary" id="pickSkipBtn" onclick="pickSkip()">Overslaan</button>
+    <button class="secondary" onclick="quitGame()">Stoppen</button>
+  </div>
+</div>
+
+<!-- ─── Results Screen ────────────────────────────────── -->
+<div id="results" class="screen">
+  <h1>Resultaten</h1>
+  <div id="resultStats" style="margin:1.5rem 0;font-size:1.1rem;text-align:center;line-height:2"></div>
+  <button onclick="startGame(gameMode)">Opnieuw spelen</button>
+  <button class="secondary" onclick="showScreen('menu')">Menu</button>
+</div>
+
+<script>
+// ── Flag ─────────────────────────────────────────────────
+const FLAG_MAP = [
+  'RRRRRR..GG..BBBBBB','RRRRRR..GG..BBBBBB','RRRRRR..GG..BBBBBB',
+  '........GG........','........GG........',
+  'GGGGGGGGGGGGGGGGGG','GGGGGGGGGGGGGGGGGG',
+  '........GG........','........GG........',
+  'BBBBBB..GG..RRRRRR','BBBBBB..GG..RRRRRR','BBBBBB..GG..RRRRRR',
+];
+const CC = { R:'c-r', B:'c-b', G:'c-g', '.':'c-w' };
+
+function buildFlag(id) {
+  const el = document.getElementById(id); el.innerHTML = '';
+  const cells = [];
+  for (const row of FLAG_MAP) for (const ch of row) {
+    const d = document.createElement('div');
+    d.className = 'cell ' + CC[ch]; el.appendChild(d); cells.push(d);
+  }
+  const order = cells.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.random() * (i + 1) | 0;
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  order.forEach((idx, i) => setTimeout(() => cells[idx].classList.add('show'), 200 + i * 12));
+}
+
+// ── Screens ──────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Tatoeba API ──────────────────────────────────────────
+const API = 'https://api.tatoeba.org/v1/sentences?lang=nld&trans:lang=gos&trans:owner=Tom9358&trans:is_direct=yes&sort=random&limit=100';
+let pairs = [], wordPool = [];
+let pos = 0, score = 0, total = 0, streak = 0, bestStreak = 0;
+let current = null, answered = false, gameMode = 'type';
+
+async function fetchPairs() {
+  const resp = await fetch(API);
+  const data = await resp.json();
+  const out = [];
+  for (const s of data.data || []) {
+    for (const t of s.translations || []) {
+      if (t.lang === 'gos') out.push({ nl: s.text, gos: t.text });
+      if (Array.isArray(t)) for (const sub of t) if (sub.lang === 'gos') out.push({ nl: s.text, gos: sub.text });
+    }
+  }
+  return out;
+}
+
+function buildWordPool() {
+  const set = new Set();
+  for (const p of pairs) for (const w of p.gos.split(/\s+/)) set.add(w);
+  wordPool = [...set];
+}
+
+// ── Utilities ────────────────────────────────────────────
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.random() * (i + 1) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+
+function normalize(s) { return s.trim().toLowerCase().replace(/[.,!?;:"']+$/, ''); }
+
+function editDist(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m + 1}, () => new Array(n + 1));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = Math.min(
+        dp[i-1][j] + 1, dp[i][j-1] + 1,
+        dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0)
+      );
+  return dp[m][n];
+}
+
+// ── Distractor generation ────────────────────────────────
+const VOWELS = 'aeiouyèöüäïé';
+function makeTypo(word) {
+  const w = [...word];
+  if (w.length < 2) return word + 'e';
+  const op = Math.random() * 4 | 0;
+  const i = (Math.random() * w.length) | 0;
+  if (op === 0 && w.length > 2) { w.splice(i, 1); return w.join(''); }
+  if (op === 1) { const c = VOWELS.includes(w[i]?.toLowerCase())
+    ? VOWELS[(VOWELS.indexOf(w[i].toLowerCase()) + 1 + (Math.random()*3|0)) % VOWELS.length]
+    : String.fromCharCode(97 + (Math.random() * 26 | 0));
+    w[i] = c; return w.join('');
+  }
+  if (op === 2 && w.length > 2) { // swap adjacent
+    const j = Math.min(i, w.length - 2);
+    [w[j], w[j+1]] = [w[j+1], w[j]]; return w.join('');
+  }
+  // double a letter
+  w.splice(i, 0, w[i]); return w.join('');
+}
+
+function getDistractors(correctWord, count = 2) {
+  const cLow = correctWord.toLowerCase();
+  // find pool words at edit distance 1-3 (similar but different)
+  const candidates = [];
+  for (const w of wordPool) {
+    if (w.toLowerCase() === cLow) continue;
+    const d = editDist(w, correctWord);
+    if (d >= 1 && d <= 3) candidates.push({ w, d });
+  }
+  candidates.sort((a, b) => a.d - b.d);
+  shuffle(candidates);
+  // prefer distance 1-2 first
+  candidates.sort((a, b) => a.d - b.d);
+
+  const out = new Set();
+  for (const c of candidates) {
+    if (out.size >= count) break;
+    out.add(c.w);
+  }
+  // fallback: generate synthetic distractors
+  let tries = 0;
+  while (out.size < count && tries++ < 50) {
+    let fake = correctWord;
+    const edits = 1 + (Math.random() * 2 | 0);
+    for (let e = 0; e < edits; e++) fake = makeTypo(fake);
+    if (fake.toLowerCase() !== cLow && !out.has(fake)) out.add(fake);
+  }
+  return [...out].slice(0, count);
+}
+
+// ── Stats ────────────────────────────────────────────────
+function updateStats() {
+  const isP = gameMode === 'pick';
+  const pre = isP ? 'p' : '';
+  document.getElementById(isP ? 'pScore' : 'score').textContent = `${score}/${total}`;
+  document.getElementById(isP ? 'pAccuracy' : 'accuracy').textContent =
+    total > 0 ? `${(score/total*100).toFixed(0)}%` : '–';
+  document.getElementById(isP ? 'pStreakDisplay' : 'streakDisplay').textContent =
+    streak >= 3 ? `🔥 Reeks: ${streak}` : '';
+}
+
+// ════════════════════════════════════════════════════════════
+// TYPE MODE
+// ════════════════════════════════════════════════════════════
+function showQuestion() {
+  if (pos >= pairs.length) { shuffle(pairs); pos = 0; }
+  current = pairs[pos++]; answered = false;
+  document.getElementById('nlSentence').textContent = current.nl;
+  document.getElementById('answerInput').value = '';
+  document.getElementById('answerInput').disabled = false;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('reveal').textContent = '';
+  document.getElementById('hintText').textContent = '';
+  document.getElementById('submitBtn').textContent = 'Controleer';
+  document.getElementById('submitBtn').onclick = () => checkAnswer();
+  document.getElementById('hintBtn').style.display = '';
+  document.getElementById('skipBtn').style.display = '';
+  document.getElementById('answerInput').focus();
+}
+
+function closeEnough(input, expected) {
+  const a = normalize(input), b = normalize(expected);
+  if (a === b) return 'exact';
+  // ö is obligatory in Gronings — reject if user dropped/added umlauts
+  const stripUml = s => s.replace(/ö/g, 'o');
+  if (stripUml(a) === stripUml(b) && a !== b) return 'wrong';
+  const d = editDist(a, b);
+  // allow 1 edit always, 2 edits for longer strings (>20 chars)
+  if (d === 1 || (d === 2 && b.length > 20)) return 'close';
+  return 'wrong';
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const input = document.getElementById('answerInput').value;
+  if (!input.trim()) return;
+  answered = true; total++;
+  const fb = document.getElementById('feedback');
+  const rv = document.getElementById('reveal');
+  const result = closeEnough(input, current.gos);
+  if (result !== 'wrong') {
+    score++; streak++; bestStreak = Math.max(bestStreak, streak);
+    if (result === 'exact') {
+      fb.textContent = streak >= 3 ? `✓ Goud! 🔥 Reeks: ${streak}` : '✓ Goud!';
+    } else {
+      fb.textContent = streak >= 3 ? `✓ Bijna goed! 🔥 Reeks: ${streak}` : '✓ Bijna goed!';
+      rv.textContent = `→ ${current.gos}`;
+    }
+    fb.className = 'feedback correct';
+  } else {
+    streak = 0;
+    fb.textContent = '✗ Helaas.'; fb.className = 'feedback wrong';
+    rv.textContent = `→ ${current.gos}`;
+  }
+  document.getElementById('answerInput').disabled = true;
+  document.getElementById('submitBtn').textContent = 'Volgende';
+  document.getElementById('hintBtn').style.display = 'none';
+  document.getElementById('skipBtn').style.display = 'none';
+  showDone(document.getElementById('submitBtn'), showQuestion);
+  updateStats();
+}
+
+function showHint() {
+  if (answered || !current) return;
+  const h = Math.max(1, current.gos.length >> 1);
+  document.getElementById('hintText').textContent = `Hint: ${current.gos.slice(0, h)}…`;
+}
+
+function skipQuestion() {
+  if (answered) return;
+  streak = 0;
+  document.getElementById('feedback').textContent = 'Overgeslagen';
+  document.getElementById('feedback').className = 'feedback wrong';
+  document.getElementById('reveal').textContent = `→ ${current.gos}`;
+  answered = true;
+  document.getElementById('answerInput').disabled = true;
+  document.getElementById('submitBtn').textContent = 'Volgende';
+  document.getElementById('hintBtn').style.display = 'none';
+  document.getElementById('skipBtn').style.display = 'none';
+  showDone(document.getElementById('submitBtn'), showQuestion);
+  updateStats();
+}
+
+// ════════════════════════════════════════════════════════════
+// PICK MODE
+// ════════════════════════════════════════════════════════════
+let pickWords = [], pickChoices = [], pickSelected = [], pickDone = false, pickMistakes = 0;
+
+function pickShow() {
+  if (pos >= pairs.length) { shuffle(pairs); pos = 0; }
+  current = pairs[pos++];
+  pickDone = false; pickMistakes = 0;
+
+  // split sentence into words, preserving trailing punctuation on last word
+  pickWords = current.gos.split(/\s+/);
+  pickSelected = new Array(pickWords.length).fill(null);
+
+  // build choices for each word position: correct + 2 distractors
+  pickChoices = pickWords.map(w => {
+    const opts = [w, ...getDistractors(w, 2)];
+    shuffle(opts);
+    return opts;
+  });
+
+  document.getElementById('pNlSentence').textContent = current.nl;
+  document.getElementById('pFeedback').textContent = '';
+  document.getElementById('pFeedback').className = 'feedback';
+  document.getElementById('pReveal').textContent = '';
+  document.getElementById('pickNextBtn').style.display = 'none';
+  renderPickGrid();
+  renderPickBuilt();
+}
+
+function renderPickBuilt() {
+  const el = document.getElementById('pickBuilt');
+  el.innerHTML = '';
+  pickSelected.forEach((w, i) => {
+    const sp = document.createElement('span');
+    sp.className = 'pw ' + (w !== null ? 'filled' : 'blank');
+    sp.textContent = w !== null ? w : '___';
+    el.appendChild(sp);
+  });
+}
+
+function renderPickGrid() {
+  const grid = document.getElementById('pickGrid');
+  grid.innerHTML = '';
+  pickChoices.forEach((opts, colIdx) => {
+    const col = document.createElement('div');
+    col.className = 'pick-col';
+    const lbl = document.createElement('div');
+    lbl.className = 'col-label';
+    lbl.textContent = colIdx + 1;
+    col.appendChild(lbl);
+    opts.forEach(word => {
+      const btn = document.createElement('button');
+      btn.className = 'word-btn';
+      btn.textContent = word;
+      btn.dataset.col = colIdx;
+      btn.dataset.word = word;
+      // if already selected this word for this col, mark it
+      if (pickSelected[colIdx] === word) btn.classList.add('selected');
+      if (pickDone) btn.classList.add('locked');
+      btn.onclick = () => pickWord(colIdx, word, btn);
+      col.appendChild(btn);
+    });
+    grid.appendChild(col);
+  });
+}
+
+function pickWord(colIdx, word, btn) {
+  if (pickDone) return;
+
+  // deselect previous in same column
+  const col = btn.parentElement;
+  col.querySelectorAll('.word-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  pickSelected[colIdx] = word;
+  renderPickBuilt();
+
+  // check if all filled
+  if (pickSelected.every(w => w !== null)) {
+    finishPick();
+  }
+}
+
+function finishPick() {
+  pickDone = true;
+  total++;
+  const fb = document.getElementById('pFeedback');
+  const rv = document.getElementById('pReveal');
+  const built = document.getElementById('pickBuilt');
+
+  let allCorrect = true;
+  // highlight per-word correctness
+  pickSelected.forEach((w, i) => {
+    const pw = built.children[i];
+    if (normalize(w) === normalize(pickWords[i])) {
+      pw.classList.add('correct-word');
+    } else {
+      pw.classList.add('wrong-word');
+      allCorrect = false;
+    }
+  });
+
+  // also highlight correct/wrong in the grid
+  document.querySelectorAll('#pickGrid .pick-col').forEach((col, i) => {
+    col.querySelectorAll('.word-btn').forEach(btn => {
+      btn.classList.add('locked');
+      if (normalize(btn.dataset.word) === normalize(pickWords[i])) {
+        btn.classList.add('correct-reveal');
+      } else if (btn.classList.contains('selected')) {
+        btn.classList.add('wrong-pick');
+      }
+    });
+  });
+
+  if (allCorrect) {
+    score++; streak++; bestStreak = Math.max(bestStreak, streak);
+    fb.textContent = streak >= 3 ? `✓ Goud! 🔥 Reeks: ${streak}` : '✓ Goud!';
+    fb.className = 'feedback correct';
+  } else {
+    streak = 0;
+    fb.textContent = '✗ Helaas.'; fb.className = 'feedback wrong';
+    rv.textContent = `→ ${current.gos}`;
+  }
+  updateStats();
+  document.getElementById('pickSkipBtn').style.display = 'none';
+  showDone(document.getElementById('pickNextBtn'), pickShow);
+}
+
+function pickNext() { pickShow(); }
+
+function pickSkip() {
+  if (pickDone) return;
+  streak = 0;
+  pickDone = true;
+  document.getElementById('pFeedback').textContent = 'Overgeslagen';
+  document.getElementById('pFeedback').className = 'feedback wrong';
+  document.getElementById('pReveal').textContent = `→ ${current.gos}`;
+  // reveal correct answers in grid
+  document.querySelectorAll('#pickGrid .pick-col').forEach((col, i) => {
+    col.querySelectorAll('.word-btn').forEach(btn => {
+      btn.classList.add('locked');
+      if (normalize(btn.dataset.word) === normalize(pickWords[i])) btn.classList.add('correct-reveal');
+    });
+  });
+  document.getElementById('pickSkipBtn').style.display = 'none';
+  showDone(document.getElementById('pickNextBtn'), pickShow);
+  updateStats();
+}
+
+// ── Shared ───────────────────────────────────────────────
+function showDone(btn, nextFn) {
+  btn.style.display = '';
+  btn.onclick = nextFn;
+  setTimeout(() => btn.focus(), 50);
+}
+
+function quitGame() {
+  const el = document.getElementById('resultStats');
+  let html = `Score: ${score}/${total}<br>`;
+  if (total > 0) html += `Nauwkeurigheid: ${(score/total*100).toFixed(0)}%<br>`;
+  if (bestStreak >= 3) html += `Beste reeks: 🔥 ${bestStreak}`;
+  el.innerHTML = html;
+  showScreen('results');
+}
+
+async function startGame(mode) {
+  gameMode = mode;
+  score = total = streak = bestStreak = pos = 0;
+  showScreen('loading');
+  buildFlag('flag2');
+  try {
+    if (!pairs.length) {
+      pairs = await fetchPairs();
+      if (!pairs.length) throw new Error('No pairs found');
+    }
+    shuffle(pairs);
+    buildWordPool();
+    document.getElementById('loadMsg').textContent = `${pairs.length} zinnen geladen!`;
+    await new Promise(r => setTimeout(r, 600));
+    if (mode === 'pick') {
+      showScreen('pick'); updateStats(); pickShow();
+    } else {
+      showScreen('quiz'); updateStats(); showQuestion();
+    }
+  } catch (e) {
+    document.getElementById('loadMsg').textContent = `Fout: ${e.message}. Controleer je internetverbinding.`;
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────
+buildFlag('flag');
+</script>
+</body>
+</html>
