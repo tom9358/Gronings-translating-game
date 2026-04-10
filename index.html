@@ -49,6 +49,17 @@
   button:hover { opacity: .85; }
   button.secondary { background: #555; }
   .loading { color: #999; margin: 1rem 0; }
+  .subtle-credit {
+    margin-top: 1.25rem;
+    color: #777;
+    font-size: .82rem;
+    text-align: center;
+  }
+  .subtle-credit a {
+    color: #9aa0b8;
+    text-decoration: none;
+  }
+  .subtle-credit a:hover { text-decoration: underline; }
 
   /* ── Shared quiz ─────────────────────────────────── */
   .quiz-card {
@@ -196,6 +207,11 @@
   <button onclick="startGame(gameMode)">Opnieuw spelen</button>
   <button class="secondary" onclick="showScreen('menu')">Menu</button>
 </div>
+
+<p class="subtle-credit">
+  Deur <a href="https://github.com/tom9358" target="_blank" rel="noopener noreferrer">Tom</a>
+  — <a href="https://github.com/tom9358/Gronings-translating-game" target="_blank" rel="noopener noreferrer">code op GitHub</a>
+</p>
 
 <script>
 // ── Flag ─────────────────────────────────────────────────
