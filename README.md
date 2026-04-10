@@ -8,3 +8,5 @@ Een klein browserspel om je Gronings te verbeteren. Werkt op basis van zinnen di
 
 **English**
 A small browser game with which you can get better at Gronings. It works based on sentences I wrote on Tatoeba.
+
+If you want to refer to this project, please use the repository’s `CITATION.cff` via GitHub’s *Cite this repository* feature.
