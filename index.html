@@ -48,6 +48,14 @@
   }
   button:hover { opacity: .85; }
   button.secondary { background: #555; }
+  #menu button {
+    width: 8rem;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+  }
   .loading { color: #999; margin: 1rem 0; }
   .subtle-credit {
     margin-top: 1.25rem;
@@ -140,7 +148,7 @@
 <div id="menu" class="screen active">
   <div class="flag" id="flag"></div>
   <h1>Grunnegs Oefenen</h1>
-  <p class="subtitle">Leer Grunnegs mit Tatoeba</p>
+  <p class="subtitle">Hou goud kinst doe vertoalen?</p>
   <button onclick="startGame('type')">✏️ Schrieven</button>
   <button onclick="startGame('pick')">👆 Kaizen</button>
 </div>
