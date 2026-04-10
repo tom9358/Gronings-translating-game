@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: Grunnegs vertoalspel
+message: Please cite this software using this metadata.
+authors:
+  - family-names: Brand
+    given-names: Tom
+url: "https://github.com/tom9358/Gronings-translating-game"
+abstract: >-
+  A Gronings translating game based on sentences I wrote on
+  Tatoeba.
+keywords:
+  - Gronings
+  - language learning
+  - educational game
+version: 1.0.0
+date-released: 2026-04-09
+license: MIT
